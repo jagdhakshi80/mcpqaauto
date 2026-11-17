@@ -70,4 +70,29 @@ uv run --active pytest \
 
   http://localhost:8000/reports/executive_dashboard.html?utm_source=chatgpt.com
 
-  
+  uv run --active python -m py_compile reporting/run_reports.py
+
+  python3 -m http.server 8000
+  http://localhost:8000/reports/executive_dashboard.html?utm_source=chatgpt.com
+  http://localhost:8000/reports/coverage/index.html?utm_source=chatgpt.com
+
+
+  uv run --active python -m reporting.run_reports
+
+  http://localhost:8000/reports/?utm_source=chatgpt.com
+
+  http://localhost:8000/reports/executive/index.html
+
+  http://localhost:8000/reports/code_coverage/index.html
+
+  http://localhost:8000/reports/api/index.html
+
+  http://localhost:8000/reports/regression/index.html
+
+  http://localhost:8000/reports/evidence/index.html
+
+  http://localhost:8000/reports/release/index.html
+
+  http://localhost:8000/reports/code_coverage/index.html
+
+  http://localhost:8000/reports/defects/index.html

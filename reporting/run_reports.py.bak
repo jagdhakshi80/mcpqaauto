@@ -1,0 +1,175 @@
+
+import json
+import html
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+
+from pathlib import Path
+from datetime import datetime, timezone
+
+ROOT = Path(__file__).resolve().parent.parent
+REPORTS = ROOT / "reports"
+HISTORY = REPORTS / "history"
+JUNIT = REPORTS / "junit.xml"
+COVERAGE = REPORTS / "coverage.json"
+
+REPORT_TYPES = {
+    "executive": "Executive Quality Dashboard",
+    "execution": "Test Execution Report",
+    "defects": "Defect & Failure Analysis",
+    "coverage": "Code Coverage Report",
+    "api": "API & MCP Validation",
+    "regression": "Regression & Trend Report",
+    "release": "Release Readiness Report",
+    "evidence": "Detailed Test Evidence",
+}
+
+
+def prepare_directories():
+    REPORTS.mkdir(exist_ok=True)
+
+    for name in REPORT_TYPES:
+        (REPORTS / name).mkdir(exist_ok=True)
+
+    HISTORY.mkdir(exist_ok=True)
+
+
+def run_tests():
+    print("\nRunning existing MCP_QA tests...\n")
+
+    command = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-v",
+        f"--junitxml={JUNIT}",
+        "--cov=src",
+        f"--cov-report=json:{COVERAGE}",
+        "--cov-report=term-missing",
+    ]
+
+    result = subprocess.run(command, cwd=ROOT)
+    return result.returncode
+
+
+def read_test_results():
+    if not JUNIT.exists():
+        raise FileNotFoundError(
+            "JUnit report missing. Pytest did not generate junit.xml."
+        )
+
+    root = ET.parse(JUNIT).getroot()
+
+    if root.tag == "testsuite":
+        suites = [root]
+    else:
+        suites = root.findall(".//testsuite")
+
+    data = {
+        "total": 0,
+        "passed": 0,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "duration": 0.0,
+        "failures": [],
+        "tests": [],
+    }
+
+    for suite in suites:
+        for case in suite.findall("testcase"):
+            data["total"] += 1
+
+            name = case.get("name", "Unknown")
+            classname = case.get("classname", "Unknown")
+            duration = float(case.get("time", 0) or 0)
+
+            data["duration"] += duration
+
+            failure = case.find("failure")
+            error = case.find("error")
+            skipped = case.find("skipped")
+
+            if failure is not None:
+                status = "Failed"
+                issue = failure
+                data["failed"] += 1
+
+            elif error is not None:
+                status = "Error"
+                issue = error
+                data["errors"] += 1
+
+            elif skipped is not None:
+                status = "Skipped"
+                issue = skipped
+                data["skipped"] += 1
+
+            else:
+                status = "Passed"
+                issue = None
+                data["passed"] += 1
+
+            message = ""
+            if issue is not None:
+                message = (
+                    issue.get("message", "")
+                    or (issue.text or "")[:2000]
+                )
+
+            combined = f"{classname} {name}".lower()
+
+            if "api" in combined or "endpoint" in combined:
+                category = "API"
+            elif "mcp" in combined or "server" in combined:
+                category = "MCP Server"
+            elif "integration" in combined:
+                category = "Integration"
+            elif "regression" in combined:
+                category = "Regression"
+            else:
+                category = "General"
+
+            record = {
+                "suite": classname,
+                "name": name,
+                "status": status,
+                "duration": round(duration, 3),
+                "category": category,
+                "message": message,
+            }
+
+            data["tests"].append(record)
+
+            if status in ("Failed", "Error"):
+                data["failures"].append(record)
+
+    executed = data["total"] - data["skipped"]
+
+    data["pass_rate"] = round(
+        data["passed"] / executed * 100, 2
+    ) if executed else 0
+
+    return data
+
+
+def read_coverage(data):
+    data["coverage"] = None
+
+    if not COVERAGE.exists():
+        return
+
+    try:
+        coverage = json.loads(COVERAGE.read_text())
+        totals = coverage.get("totals", {})
+
+        data["coverage"] = totals.get("percent_covered")
+        data["covered_lines"] = totals.get("covered_lines")
+        data["missing_lines"] = totals.get("missing_lines")
+    except (ValueError, OSError):
+        print("Warning: Could not read coverage report.")
+
+
+def save_history(data):
+    history_file = HISTORY / "execution_history.json"
