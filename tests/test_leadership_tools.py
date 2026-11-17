@@ -34,7 +34,7 @@ def test_release_not_ready():
     )
 
     assert result["release_readiness"] == "NOT_READY"
-    assert len(result["blockers"]) == 2
+    assert len(result["blockers"]) == 3
     assert len(result["warnings"]) == 2
 
 

@@ -24,4 +24,16 @@ print(score_test_risk(5, 4, 5))
 PY
 
 
+
+
 uv run --active pytest -v
+
+
+uv add --dev pytest-html
+
+uv run --active pytest --cov=mcpqaauto --cov-report=html:reports/coverage --cov-report=term-missing
+
+open reports/coverage/index.html
+
+ asyncio_default_fixture_loop_scope = "function"
+-bash: asyncio_default_fixture_loop_scope: command not found
