@@ -9,9 +9,13 @@ authors = [
 requires-python = ">=3.15"
 dependencies = [
     "httpx>=0.28.1",
+    "jinja2>=3.1.6",
     "jsonschema>=4.26.0",
     "mcp<2",
     "pydantic>=2.14.3",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "pytest-html>=4.2.0",
 ]
 
 [project.scripts]
@@ -29,4 +33,14 @@ dev = [
     "pytest-html>=4.2.0",
 ]
 [tool.pytest.ini_options]
-asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+addopts = [
+    "-v",
+    "--self-contained-html",
+    "--html=reports/pytest_report.html",
+    "--junitxml=reports/junit.xml",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=json:reports/coverage.json"
+]

@@ -364,9 +364,13 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
+    { name = "jinja2" },
     { name = "jsonschema" },
     { name = "mcp" },
     { name = "pydantic" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-html" },
 ]
 
 [package.dev-dependencies]
@@ -380,9 +384,13 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "jsonschema", specifier = ">=4.26.0" },
     { name = "mcp", specifier = "<2" },
     { name = "pydantic", specifier = ">=2.14.3" },
+    { name = "pytest", specifier = ">=9.2.0" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "pytest-html", specifier = ">=4.2.0" },
 ]
 
 [package.metadata.requires-dev]

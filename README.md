@@ -36,4 +36,38 @@ uv run --active pytest --cov=mcpqaauto --cov-report=html:reports/coverage --cov-
 open reports/coverage/index.html
 
  asyncio_default_fixture_loop_scope = "function"
--bash: asyncio_default_fixture_loop_scope: command not found
+pytest
+uv run pytest
+
+uv run python -c "import tomllib; tomllib.load(open('pyproject.toml', 'rb')); print('TOML configuration OK')"
+
+mkdir -p reports/history
+
+uv run pytest
+
+uv run python -m reporting.executive_report
+
+uv run --active pytest \
+  --junitxml=reports/junit.xml \
+  --cov=src \
+  --cov-report=term-missing \
+  --cov-report=json:reports/coverage.json
+
+  uv add pytest-cov
+
+  ls -lh reports/
+
+  uv run --active python -m reporting.executive_report
+
+  cat reports/executive_metrics.json
+
+  uv run --active pytest \
+  --junitxml=reports/junit.xml \
+  --cov=src \
+  --cov-report=json:reports/coverage.json
+
+  python3 -m http.server 8000
+
+  http://localhost:8000/reports/executive_dashboard.html?utm_source=chatgpt.com
+
+  

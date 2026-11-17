@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP QA | Executive Quality Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 30px;
+  font-family: Inter, Arial, sans-serif;
+  background: #f3f6fb;
+  color: #17243b;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+h1 { margin: 0; font-size: 27px; }
+.sub { color: #718096; margin-top: 7px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.card {
+  background: white;
+  padding: 23px;
+  border-radius: 14px;
+  box-shadow: 0 3px 15px #17243b0a;
+}
+
+.metric {
+  font-size: 34px;
+  font-weight: 750;
+  margin-top: 14px;
+}
+
+.label {
+  color: #718096;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .7px;
+}
+
+.green { color: #15966b; }
+.red { color: #dc4545; }
+.orange { color: #dc922d; }
+
+.section {
+  margin-top: 22px;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+canvas { max-height: 280px; }
+
+@media(max-width: 850px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .charts { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>MCP QA | Quality Command Center</h1>
+    <div class="sub">Executive Engineering Quality Report</div>
+  </div>
+  <div id="date"></div>
+</header>
+
+<div class="grid">
+  <div class="card">
+    <div class="label">TOTAL TESTS</div>
+    <div class="metric" id="total">—</div>
+  </div>
+  <div class="card">
+    <div class="label">PASSED</div>
+    <div class="metric green" id="passed">—</div>
+  </div>
+  <div class="card">
+    <div class="label">FAILED + ERRORS</div>
+    <div class="metric red" id="failed">—</div>
+  </div>
+  <div class="card">
+    <div class="label">PASS RATE</div>
+    <div class="metric" id="rate">—</div>
+  </div>
+</div>
+
+<div class="section charts">
+  <div class="card">
+    <h3>Test Execution Distribution</h3>
+    <canvas id="executionChart"></canvas>
+  </div>
+  <div class="card">
+    <h3>Automation Coverage</h3>
+    <canvas id="coverageChart"></canvas>
+  </div>
+</div>
+
+<div class="section card">
+  <h3>Executive Quality Assessment</h3>
+  <p id="assessment">Loading test results...</p>
+  <h3>Failed Test Cases</h3>
+  <div id="failures">Loading...</div>
+</div>
+
+<script>
+async function loadReport() {
+  const response = await fetch("executive_metrics.json");
+  const data = await response.json();
+
+  document.getElementById("date").textContent =
+    "Generated: " + new Date(data.generated_at).toLocaleString();
+
+  document.getElementById("total").textContent = data.total;
+  document.getElementById("passed").textContent = data.passed;
+  document.getElementById("failed").textContent =
+    data.failed + data.errors;
+
+  document.getElementById("rate").textContent =
+    data.pass_rate + "%";
+
+  new Chart(document.getElementById("executionChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["Passed", "Failed", "Errors", "Skipped"],
+      datasets: [{
+        data: [
+          data.passed,
+          data.failed,
+          data.errors,
+          data.skipped
+        ],
+        backgroundColor: [
+          "#15966b", "#dc4545", "#dc922d", "#94a3b8"
+        ],
+        borderWidth: 0
+      }]
+    }
+  });
+
+  const coverage = data.coverage ?? 0;
+
+  new Chart(document.getElementById("coverageChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["Covered", "Remaining"],
+      datasets: [{
+        data: [coverage, Math.max(0, 100 - coverage)],
+        backgroundColor: ["#4779df", "#e7edf5"],
+        borderWidth: 0
+      }]
+    }
+  });
+
+  const assessment = data.failed + data.errors > 0
+    ? "Engineering review required: test failures detected."
+    : data.skipped > 0
+      ? "Review skipped tests before making a release decision."
+      : "All executed tests passed. Review coverage and other release criteria.";
+
+  document.getElementById("assessment").textContent = assessment;
+
+  const failures = document.getElementById("failures");
+  failures.replaceChildren();
+
+  if (!data.failures.length) {
+    failures.textContent = "No failed test cases.";
+  } else {
+    data.failures.forEach(item => {
+      const row = document.createElement("p");
+      row.textContent =
+        item.suite + " / " + item.test + ": " + item.message;
+      failures.appendChild(row);
+    });
+  }
+}
+
+loadReport().catch(error => {
+  document.getElementById("assessment").textContent =
+    "Unable to load report: " + error.message;
+});
+</script>
+
+</body>
+</html>
+
